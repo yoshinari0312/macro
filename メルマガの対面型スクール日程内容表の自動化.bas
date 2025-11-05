@@ -1,4 +1,6 @@
 Option Explicit
+'
+'=== ファイルパスなどの基本設定を定義 ===
 ' ここを環境に合わせて変更してください
 Private Const BASE_PATH As String = "C:\Users\intern-yo-onodera\OneDrive - DMG MORI\テクニウム 教育サービスGP - 0_対面型スクール日程表作成"
 'Private Const BASE_PATH As String = "C:\Users\intern-yk-shimizu\OneDrive - DMG MORI\メルマガ\田中李空＆遥馨さん＆清水さん共有\01_メルマガ資料\02_メルマガ詳細資料\0_対面型スクール日程表作成"
@@ -6,6 +8,7 @@ Private Const BASE_PATH As String = "C:\Users\intern-yo-onodera\OneDrive - DMG M
 Private Const DEBUG_MODE As Boolean = False ' Trueにするとデバッグ用MsgBoxを表示
 
 Private Sub DebugMessage(ByVal message As String)
+    ' デバッグモードが有効な場合のみ情報をメッセージボックスで表示
     If DEBUG_MODE Then
         MsgBox message, vbInformation, "GenerateCategorySchedule - Debug"
     End If
@@ -13,6 +16,7 @@ End Sub
 
 ' 指定の形式でスケジュールシートをHTMLに変換して保存/貼付する
 Public Sub ExportScheduleToHTML()
+    ' スケジュールシートを走査してメール配信用のHTMLテーブルを生成・保存するメイン処理
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim r As Long, rr As Long, j As Long
@@ -66,14 +70,18 @@ Public Sub ExportScheduleToHTML()
     On Error GoTo ErrHandler
 
     Set ws = ThisWorkbook.Worksheets("スケジュール")
+    ' 出力対象となる「スケジュール」シートを取得
 
     ' URLパラメータの初期化
     dateParam = Format(ws.Range("G14").value, "yymmdd")
+    ' HTML内リンクのパラメータ生成に使用する日付と連番の初期化
     startAlpha = LCase(Trim(ws.Range("G15").value))
     currentAlpha = startAlpha
     Set urlAlphaMap = CreateObject("Scripting.Dictionary")
+    ' URLごとに付与する英字パラメータを重複なく管理
 
     Dim lastA As Long, lastB As Long, lastC As Long, lastD As Long
+    ' A～D列の最終行を取得して実際のデータ範囲を把握
     lastA = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
     lastB = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
     lastC = ws.Cells(ws.Rows.Count, "C").End(xlUp).Row
@@ -88,7 +96,9 @@ Public Sub ExportScheduleToHTML()
     End If
 
     Set monthsDict = CreateObject("Scripting.Dictionary")
+    ' 日程に含まれる月を収集してHTML冒頭のコメントに出力する
     For r = 3 To lastRow
+        ' 日程列から月情報を抽出
         cellC = CStr(ws.Cells(r, "C").value)
         If Len(Trim$(cellC)) > 0 Then
             j = InStr(1, cellC, "/")
@@ -113,6 +123,7 @@ Public Sub ExportScheduleToHTML()
         Next mKey
 
         Do
+            ' 月番号を昇順に並べ替え
             swapped = False
             For j = 0 To UBound(mList) - 1
                 If CLng(mList(j)) > CLng(mList(j + 1)) Then
@@ -127,6 +138,7 @@ Public Sub ExportScheduleToHTML()
 
     monthsLabel = ""
     If monthsDict.Count > 0 Then
+        ' 収集した月番号をカンマ区切りで連結しコメント文を作成
         For j = 0 To UBound(mList)
             If monthsLabel <> "" Then monthsLabel = monthsLabel & "、"
             monthsLabel = monthsLabel & mList(j)
@@ -135,6 +147,7 @@ Public Sub ExportScheduleToHTML()
     End If
 
     html = "<!-- " & monthsLabel & " -->" & vbCrLf & vbCrLf & "<table>" & vbCrLf
+    ' 月情報のコメントとテーブル開始タグを作成
 
     ' 最初のカテゴリヘッダを先頭に出す場合、スケジュールシートの先頭行にカテゴリがあることを期待して
     ' ループ前に先頭のカテゴリ行を探して出力しておく（ユーザの要求: 一番上に最初のカテゴリの表示）
@@ -142,6 +155,7 @@ Public Sub ExportScheduleToHTML()
     firstCatFound = False
     Dim firstCatName As String
     For r = 1 To lastRow
+        ' 最上段に表示する最初のカテゴリ行を探してHTMLへ出力
         If Trim$(CStr(ws.Cells(r, "A").value)) <> "" Then
             If Left$(Trim$(CStr(ws.Cells(r, "A").value)), 1) = "〇" Then
                 firstCatName = Trim$(CStr(ws.Cells(r, "A").value))
@@ -159,6 +173,7 @@ Public Sub ExportScheduleToHTML()
     isFirstTable = True
     rr = 3
     Do While rr <= lastRow
+        ' スケジュール全体を先頭から順に処理
         advance = 1
 
         cellA = Trim$(CStr(ws.Cells(rr, "A").value))
@@ -167,6 +182,7 @@ Public Sub ExportScheduleToHTML()
         cellD = Trim$(CStr(ws.Cells(rr, "D").value))
 
         If Len(cellA) > 0 And Left$(cellA, 1) = "〇" And cellB = "" And cellC = "" And cellD = "" Then
+            ' 新しいカテゴリ見出しが出現した場合の処理
             If openTable Then
                 html = html & "        </tbody>" & vbCrLf & _
                               "    </table>" & vbCrLf & _
@@ -198,6 +214,7 @@ Public Sub ExportScheduleToHTML()
                           "</td></tr>" & vbCrLf & vbCrLf
 
             If hasDataForCategory Then
+                ' カテゴリに紐づくデータが続く場合のみテーブル要素を作成
                 ' テーブルの前に少し余白を挿入してカテゴリとテーブルの間隔を確保
                 html = html & "<td width=""100%"" class=""responsive-td"" valign=""top"" style=""padding: 10px;"">" & vbCrLf
                 html = html & "<table border=""1"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse: collapse; font-size: 14px; line-height: 1.2; width: 100%; vertical-align: middle;"">" & vbCrLf
@@ -221,14 +238,17 @@ Public Sub ExportScheduleToHTML()
         End If
 
         If cellA = "" And cellB = "" And cellC = "" And cellD = "" Then
+            ' 完全な空行はスキップ
             GoTo AdvanceLoop
         End If
 
         If cellA = "" Then
+            ' コース名が空の行もスキップ
             GoTo AdvanceLoop
         End If
 
         If Not openTable Then
+            ' テーブルが開かれていない場合は新規にテーブルを生成
             html = html & "<td width=""100%"" class=""responsive-td"" valign=""top"" style=""padding: 10px;"">" & vbCrLf
             html = html & "<table border=""1"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse: collapse; font-size: 14px; line-height: 1.2; width: 100%; vertical-align: middle;"">" & vbCrLf
             html = html & "<colgroup><col width=""50%;""><col width=""10%;""><col width=""30%;""><col width=""10%;""></colgroup>" & vbCrLf
@@ -250,6 +270,7 @@ Public Sub ExportScheduleToHTML()
         courseStart = rr
         courseEnd = rr
         Do While courseEnd + 1 <= lastRow
+            ' 同一コースに属する連続行を判定して最終行を求める
             nextA = Trim$(CStr(ws.Cells(courseEnd + 1, "A").value))
             nextB = Trim$(CStr(ws.Cells(courseEnd + 1, "B").value))
             nextC = Trim$(CStr(ws.Cells(courseEnd + 1, "C").value))
@@ -271,6 +292,7 @@ Public Sub ExportScheduleToHTML()
         lastPlace = ""
         lastLink = ""
         For idx = 1 To rowCount
+            ' コースに紐づく場所・リンク・日程・残席情報を配列へ格納
             thisPlace = Trim$(CStr(ws.Cells(courseStart + idx - 1, "B").value))
             If thisPlace <> "" Then
                 lastPlace = thisPlace
@@ -294,6 +316,7 @@ Public Sub ExportScheduleToHTML()
 
         idx = 1
         Do While idx <= rowCount
+            ' 同一場所が連続する行数を計算して結合用情報を作成
             spanCount = 1
             Do While idx + spanCount <= rowCount
                 If StrComp(placeArr(idx + spanCount), placeArr(idx), vbTextCompare) = 0 Then
@@ -310,6 +333,7 @@ Public Sub ExportScheduleToHTML()
         escapedCourseName = Replace$(courseName, "&", "&amp;")
 
         For idx = 1 To rowCount
+            ' HTMLの1行分を出力（コース名・場所・日程・残席）
             If idx = 1 Then
                 html = html & "<tr style=""background-color: #ffffff;"">" & vbCrLf
                 html = html & "<td width=""50%"" rowspan=""" & rowCount & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;"">" & escapedCourseName & "</td>" & vbCrLf
@@ -318,6 +342,7 @@ Public Sub ExportScheduleToHTML()
             End If
 
             If placeSpan(idx) > 0 Then
+                ' 同一場所が続く場合はrowspanでまとめて表示
                 escapedPlace = Replace$(placeArr(idx), "&", "&amp;")
                 If linkArr(idx) <> "" And escapedPlace <> "" Then
                     Dim fullUrl As String
@@ -340,12 +365,15 @@ Public Sub ExportScheduleToHTML()
         Next idx
 
         advance = rowCount
+        ' まとめて処理した行数分だけループカウンタを進める
 
 AdvanceLoop:
+        ' 次の行に進むためのラベル
         rr = rr + advance
     Loop
 
     If openTable Then
+        ' ループ終了時に開きっぱなしのテーブルがあれば閉じる
         html = html & "        </tbody>" & vbCrLf & _
                       "    </table>" & vbCrLf & _
                       "</td>" & vbCrLf & vbCrLf
@@ -355,21 +383,26 @@ AdvanceLoop:
     html = html & "</table>" & vbCrLf
 
     timeStamp = Format$(Now, "yyyymmdd_Hhnnss")
+    ' 出力ファイル名にタイムスタンプを付与し保存
     sFile = BASE_PATH & "\schedule_export_" & timeStamp & ".html"
     fnum = FreeFile
     Open sFile For Output As #fnum
+    ' HTML文字列をファイルへ書き込み
     Print #fnum, html
     Close #fnum
 
     MsgBox "HTML を生成し、ファイルに保存しました: " & sFile, vbInformation
+    ' 出力完了をユーザへ通知
     Exit Sub
 
 ErrHandler:
+    ' エラー発生時はメッセージを表示して処理を終了
     MsgBox "HTML エクスポート中にエラーが発生しました: " & Err.Description, vbExclamation
 End Sub
 
 ' セル結合時の警告を抑制して安全に結合するヘルパー
 Private Sub SafeMerge(ByVal rng As Range)
+    ' セル結合時の警告を回避しつつ上段セルの値を保持するユーティリティ
     On Error Resume Next
     Dim topVal As Variant
     Dim c As Range
@@ -388,6 +421,7 @@ Private Sub SafeMerge(ByVal rng As Range)
 End Sub
 
 Private Function NormalizeDateText(ByVal value As Variant) As String
+    ' 日付文字列に混在する全角記号や改行などを統一的な形式に整形
     Dim txt As String
 
     txt = Trim$(CStr(value))
@@ -413,6 +447,7 @@ Private Function NormalizeDateText(ByVal value As Variant) As String
 End Function
 
 Private Function TryParseDate(ByVal value As Variant, ByRef parsedDate As Date, Optional ByVal fallbackYear As Variant) As Boolean
+    ' 日付セルと補助情報から正しい日付を推定し、解析に成功したらTrueを返す
     Dim txt As String
     Dim yearNumber As Long
     Dim yearText As String
@@ -436,6 +471,7 @@ Private Function TryParseDate(ByVal value As Variant, ByRef parsedDate As Date, 
 
     ' 数字だけの場合 (日付シリアル) は value の日付を優先
     If InStr(txt, "/") = 0 And InStr(txt, "-") = 0 And InStr(txt, ".") = 0 Then
+        ' 区切りがない場合は日付シリアル値の可能性が高いため元のセル値を優先
         If IsDate(value) Then
             txt = Format$(CDate(value), "yyyy/m/d")
         End If
@@ -473,6 +509,7 @@ Private Function TryParseDate(ByVal value As Variant, ByRef parsedDate As Date, 
     ' フォールバック年が指定されている場合は、たとえ G 列の値に年が含まれていても
     ' まずフォールバック年での合成を試みる（ユーザ指定の年を優先するため）
     If hasFallbackYear Then
+        ' 指定された年を優先して月日情報と結合する
         Dim cleanTxt2 As String
         Dim mdParts As String
         Dim p As String
@@ -516,6 +553,7 @@ Private Function TryParseDate(ByVal value As Variant, ByRef parsedDate As Date, 
 
     ' フォールバック年がない場合は、元の値やテキスト内に年が含まれていればそのまま解釈
     If Not hasFallbackYear Then
+        ' フォールバック年がない場合は元の値内の年情報を尊重
         If hasYearInValue Then
             If IsDate(txt) Then
                 parsedDate = CDate(txt)
@@ -531,6 +569,7 @@ Private Function TryParseDate(ByVal value As Variant, ByRef parsedDate As Date, 
 
     ' ここまでで確定できない場合は value の日付評価にフォールバック
     If IsDate(value) Then
+        ' 解析できなかった場合でもセルが日付ならそれを採用
         parsedDate = CDate(value)
         TryParseDate = True
         Exit Function
@@ -549,6 +588,7 @@ CleanFail:
 End Function
 
 Private Function ContainsYear(ByVal s As String) As Boolean
+    ' 文字列内に4桁の西暦が含まれているかどうかを判定
     Dim t As String, parts As Variant, p As Variant, y As Long
     t = NormalizeDateText(s)
     parts = Split(Replace(Replace(t, "-", "/"), ".", "/"), "/")
@@ -577,6 +617,8 @@ End Function
 '   4) A列～D列にカテゴリ→コース別の一覧が自動生成される。
 '**********************************************************************
 Public Sub GenerateCategorySchedule()
+
+    ' 指定カテゴリと期間に合致する講座情報を抽出し、スケジュールシートへ整形出力するメイン処理
 
     '=== ★ 基本設定エリア =================================================
     Const FILE_EXCEL1 As String = "エクセル1.xlsx"          ' コース毎の詳細 (場所・期間・残席など)
@@ -671,6 +713,7 @@ Public Sub GenerateCategorySchedule()
     '=== ★ 入力チェック (カテゴリ名・日付範囲) ============================
     ' チェックボックスから選択されたカテゴリを収集
     Dim selectedCategories As Collection
+    ' チェックボックスで選択されたカテゴリ名をまとめるコレクション
     Set selectedCategories = New Collection
     
     Dim categoryMappings As Object
@@ -685,16 +728,19 @@ Public Sub GenerateCategorySchedule()
     
     Dim cell As Range
     For Each cell In wsOutput.Range("F4:F10")
+        ' TRUEになっているセルごとにカテゴリ名を収集
         If cell.value = True Then
             selectedCategories.Add categoryMappings(cell.Address(RowAbsolute:=False, ColumnAbsolute:=False))
         End If
     Next cell
     
     If selectedCategories.Count = 0 Then
+        ' 一つも選択されていなければエラーで処理を中断
         Err.Raise vbObjectError + 100, "GenerateCategorySchedule", "F4～F10のチェックボックスで少なくとも1つのカテゴリを選択してください。"
     End If
 
     isAllCategories = (selectedCategories.Count > 1)
+    ' 2カテゴリ以上選択されている場合はカテゴリ別出力モード
 
     ' URLパラメータの初期化
     dateParam = Format(wsOutput.Range("G14").value, "yymmdd")
@@ -703,14 +749,17 @@ Public Sub GenerateCategorySchedule()
     Set urlAlphaMap = CreateObject("Scripting.Dictionary")
 
     If Not TryParseDate(wsOutput.Range("G12").value, filterStartDate) Then
+        ' 開始日が不正な場合はエラー
         Err.Raise vbObjectError + 101, "GenerateCategorySchedule", "G12セルの開始日が日付として認識できません。"
     End If
 
     If Not TryParseDate(wsOutput.Range("I12").value, filterEndDate) Then
+        ' 終了日が不正な場合はエラー
         Err.Raise vbObjectError + 102, "GenerateCategorySchedule", "I12セルの終了日が日付として認識できません。"
     End If
 
     If filterEndDate < filterStartDate Then
+        ' 期間の前後が逆転していればエラー
         Err.Raise vbObjectError + 103, "GenerateCategorySchedule", "終了日(I12)が開始日(G12)よりも前の日付になっています。"
     End If
 
@@ -730,20 +779,24 @@ Public Sub GenerateCategorySchedule()
     End If
 
     Set wbDetail = Workbooks.Open(BASE_PATH & "\" & FILE_EXCEL1, ReadOnly:=True)
+    ' コース詳細の元データブックを読み取り専用で開く
     detailOpened = True
     Set wsDetail = wbDetail.Worksheets("空席情報2025_26年1Q")
 
     Set wbCategory = Workbooks.Open(BASE_PATH & "\" & FILE_EXCEL2, ReadOnly:=True)
+    ' カテゴリ対応表を開く
     categoryOpened = True
     Set wsCategory = wbCategory.Worksheets("カテゴリ")
 
     Set urlMap = CreateObject("Scripting.Dictionary")
     Set wbUrl = Workbooks.Open(BASE_PATH & "\" & FILE_URL_MAP, ReadOnly:=True)
+    ' コースとURLの対応表を開き、辞書に格納
     urlOpened = True
     Set wsUrl = wbUrl.Worksheets("コースとURL対応表")
 
     lastRowUrl = wsUrl.Cells(wsUrl.Rows.Count, "E").End(xlUp).Row
     For rowIdx = 1 To lastRowUrl
+        ' コース名×場所の組み合わせでURLを辞書に保存
         courseName = Trim$(wsUrl.Cells(rowIdx, "A").value)
         If Len(courseName) > 0 Then
             urlLocation = Trim$(wsUrl.Cells(rowIdx, "B").value)
@@ -764,6 +817,7 @@ Public Sub GenerateCategorySchedule()
     lastRowCategory = wsCategory.Cells(wsCategory.Rows.Count, "A").End(xlUp).Row
     Dim cat As Variant
     For Each cat In selectedCategories
+        ' 選択されたカテゴリごとに対応するコース名を収集
         For rowIdx = 2 To lastRowCategory
             If StrComp(Trim$(wsCategory.Cells(rowIdx, "A").value), "〇" & cat, vbTextCompare) = 0 Then
                 courseName = Trim$(wsCategory.Cells(rowIdx, "B").value)
@@ -778,10 +832,12 @@ Public Sub GenerateCategorySchedule()
     Next cat
 
     If courseList.Count = 0 Then
+        ' 該当コースが一つも見つからない場合はエラー
         Err.Raise vbObjectError + 106, "GenerateCategorySchedule", _
                   "選択されたカテゴリに紐づくコースがエクセル2.xlsxで見つかりませんでした。"
     End If    '=== ★ コースごとのスケジュール格納用ディクショナリ ==================
     Set courseSchedules = CreateObject("Scripting.Dictionary")
+    ' コース名ごとに開催スケジュールを格納する辞書（値はCollection）
     For i = 1 To courseList.Count
         If Not courseSchedules.Exists(courseList(i)) Then
             Set scheduleList = New Collection
@@ -792,6 +848,7 @@ Public Sub GenerateCategorySchedule()
     ' G3 が全て指定のときはカテゴリごとに出力するためのマップを作成
     Dim categoryMap As Object ' Key=カテゴリ名, Item=Collection of course names
     Set categoryMap = CreateObject("Scripting.Dictionary")
+    ' カテゴリごとに紐づくコース一覧を保持し、複数カテゴリ選択時のグルーピングに利用
     For Each cat In selectedCategories
         Set categoryMap(cat) = New Collection
         For rowIdx = 2 To lastRowCategory
@@ -809,6 +866,7 @@ Public Sub GenerateCategorySchedule()
     '=== ★ エクセル1.xlsxから該当データを抽出 =============================
     lastRowDetail = wsDetail.Cells(wsDetail.Rows.Count, "C").End(xlUp).Row
     For rowIdx = 6 To lastRowDetail
+        ' エクセル1.xlsxの明細行を走査して該当スケジュールを抽出
         courseName = Trim$(wsDetail.Cells(rowIdx, "C").value)
         Dim rowStatus As String
         Dim parsedStartText As String
@@ -816,6 +874,7 @@ Public Sub GenerateCategorySchedule()
         rawStart = Trim$(CStr(wsDetail.Cells(rowIdx, "G").value))
         If courseSchedules.Exists(courseName) Then
             If TryParseDate(wsDetail.Cells(rowIdx, "G").value, tmpDate, wsDetail.Cells(rowIdx, "A").value) Then
+                ' 開催開始日の解析に成功した場合のみ判定を行う
                 scheduleStart = tmpDate
                 parsedStartText = Format$(scheduleStart, "yyyy/mm/dd")
                 ' 指定範囲に含まれる開始日のみ対象
@@ -841,6 +900,7 @@ Public Sub GenerateCategorySchedule()
                 End If
             Else
                 invalidStartDateCount = invalidStartDateCount + 1
+                ' 日付が解析できなかった行は統計用にカウント
                 rowStatus = "INVALID"
             End If
         Else
@@ -899,6 +959,7 @@ Public Sub GenerateCategorySchedule()
 
     '=== ★ 出力シートの既存レイアウトをクリア ============================
     With wsOutput.Range("A1:D1000")
+        ' 既存の一覧表示領域をクリアしてから再生成
         .Clear
         .ClearFormats
     End With
@@ -906,7 +967,8 @@ Public Sub GenerateCategorySchedule()
     '=== ★ カテゴリタイトルとヘッダー行を整形 ============================
     ' ヘッダ表示: 選択された最初のカテゴリ名をA1に表示
     If selectedCategories.Count > 0 Then
-        wsOutput.Range("A1").value = "〇" & selectedCategories(1)
+    wsOutput.Range("A1").value = "〇" & selectedCategories(1)
+    ' 一番目に選択されたカテゴリ名を大見出しとして表示
     Else
         wsOutput.Range("A1").value = "講座一覧（選択カテゴリ）"
     End If
@@ -930,11 +992,13 @@ Public Sub GenerateCategorySchedule()
     hasOutput = False
     Dim skipBorderRows As Object
     Set skipBorderRows = CreateObject("Scripting.Dictionary")
+    ' 罫線適用を除外する行番号を管理（カテゴリ見出しや空行など）
 
     ' 出力: G3 が全てならカテゴリごとの見出しを付けて出力、そうでなければ従来どおり全コースを順に出力
     If isAllCategories Then
         Dim catKey As Variant
         For Each catKey In categoryMap.Keys
+            ' 各カテゴリごとに見出しとコース情報を出力
             ' カテゴリ間に1行の空白を入れる（先頭カテゴリの前は不要）
             If outputRow > 3 Then
                 ' mark this blank row to skip borders and then increment
@@ -957,12 +1021,14 @@ Public Sub GenerateCategorySchedule()
             Dim cCol As Collection
             Set cCol = categoryMap(catKey)
             For i = 1 To cCol.Count
+                ' カテゴリに紐づく各コースのスケジュールを展開
                 courseName = cCol(i)
                 If courseSchedules.Exists(courseName) Then
                     Set scheduleList = courseSchedules(courseName)
                     If scheduleList.Count > 0 Then
                         firstRowForCourse = outputRow
                         For scheduleIdx = 1 To scheduleList.Count
+                            ' 各開催日程を1行ずつ書き出し
                             scheduleInfo = scheduleList(scheduleIdx)
                             If scheduleIdx = 1 Then
                                 wsOutput.Cells(outputRow, "A").value = courseName
@@ -972,6 +1038,7 @@ Public Sub GenerateCategorySchedule()
                             locationName = Trim$(CStr(scheduleInfo(0)))
                             wsOutput.Cells(outputRow, "B").value = locationName
                             If Len(locationName) > 0 Then
+                                ' 場所が空でなければURL辞書からリンクを付与
                                 urlKey = LCase$(courseName) & "|" & LCase$(locationName)
                                 If urlMap.Exists(urlKey) Then
                                     If wsOutput.Cells(outputRow, "B").Hyperlinks.Count > 0 Then
@@ -1000,6 +1067,7 @@ Public Sub GenerateCategorySchedule()
                             End If
                             ' 残席数 0 の場合は "満席" と表示
                             Dim seatValOut As String
+                            ' 残席数0は「満席」表示に差し替え
                             If IsNumeric(scheduleInfo(3)) Then
                                 If CLng(scheduleInfo(3)) = 0 Then
                                     seatValOut = "満席"
@@ -1018,7 +1086,8 @@ Public Sub GenerateCategorySchedule()
                             outputRow = outputRow + 1
                         Next scheduleIdx
                         ' マージ処理（コース名・場所）を従来と同様に行う
-            If outputRow - firstRowForCourse > 1 Then
+                        If outputRow - firstRowForCourse > 1 Then
+                            ' コース名が複数行に渡る場合はA列とB列を適切に結合
                             Set mergeRngA = wsOutput.Range(wsOutput.Cells(firstRowForCourse, "A"), _
                                     wsOutput.Cells(outputRow - 1, "A"))
                             SafeMerge mergeRngA
@@ -1053,11 +1122,12 @@ Public Sub GenerateCategorySchedule()
         Next catKey
     Else
         For i = 1 To courseList.Count
+            ' 単一カテゴリ指定時はコース一覧をそのまま出力
             courseName = courseList(i)
             Set scheduleList = courseSchedules(courseName)
             
             If scheduleList.Count > 0 Then
-            firstRowForCourse = outputRow
+                firstRowForCourse = outputRow
 
             For scheduleIdx = 1 To scheduleList.Count
                 scheduleInfo = scheduleList(scheduleIdx)
@@ -1101,6 +1171,7 @@ Public Sub GenerateCategorySchedule()
                     wsOutput.Cells(outputRow, "C").value = vbNullString
                 End If
 
+                ' 残席数は元データをそのまま表示（数値以外の表現にも対応）
                 wsOutput.Cells(outputRow, "D").value = scheduleInfo(3)
 
                 currentRow = outputRow
@@ -1153,6 +1224,7 @@ Public Sub GenerateCategorySchedule()
     End If
 
     If Not hasOutput Then
+        ' 条件に合致するデータが無い場合のメッセージ表示
         wsOutput.Range("A3").value = "※指定した期間内のデータはありません。"
         wsOutput.Range("A3").Font.Color = RGB(192, 0, 0)
         Dim tmpMergeRng As Range
@@ -1164,6 +1236,7 @@ Public Sub GenerateCategorySchedule()
         ' 罫線・列幅などの体裁調整
         Dim rIdx As Long
         For rIdx = 2 To outputRow - 1
+            ' 罫線をカテゴリ行とデータ行で切り替え
             If Not skipBorderRows.Exists(CStr(rIdx)) Then
                 With wsOutput.Range(wsOutput.Cells(rIdx, "A"), wsOutput.Cells(rIdx, "D"))
                     .Borders.LineStyle = xlContinuous
@@ -1218,37 +1291,126 @@ CleanExit:
     Exit Sub
 
 ErrHandler:
+    ' 処理中に例外が発生した場合は内容をユーザへ通知
     MsgBox "スケジュール生成中にエラーが発生しました。" & vbCrLf & _
            "詳細: " & Err.Description, vbCritical + vbOKOnly, "GenerateCategorySchedule"
     Resume CleanExit
 
 End Sub
 
+Private Function StripTrackingParameters(ByVal url As String) As String
+    ' 既存URLからメルマガ用のUTMパラメータを除去してベースURLを得る
+    Dim workUrl As String
+    Dim fragment As String
+    Dim hashPos As Long
+    Dim qPos As Long
+    Dim params As Variant
+    Dim param As Variant
+    Dim filtered As String
+    Dim lowerParam As String
+
+    workUrl = url
+    hashPos = InStr(workUrl, "#")
+    If hashPos > 0 Then
+        ' アンカー(#以降)は一旦切り離して後で付け直す
+        fragment = Mid$(workUrl, hashPos)
+        workUrl = Left$(workUrl, hashPos - 1)
+    End If
+
+    qPos = InStr(workUrl, "?")
+    If qPos = 0 Then
+        ' クエリ文字列が存在しない場合はそのまま返却
+        StripTrackingParameters = workUrl & fragment
+        Exit Function
+    End If
+
+    params = Split(Mid$(workUrl, qPos + 1), "&")
+    ' 既存のクエリパラメータからUTM系のみ除外して再構築
+    For Each param In params
+        lowerParam = LCase$(Trim$(param))
+        If Len(lowerParam) > 0 Then
+            If Not (Left$(lowerParam, Len("utm_source=mail")) = "utm_source=mail" _
+                Or Left$(lowerParam, Len("utm_medium=email")) = "utm_medium=email" _
+                Or Left$(lowerParam, Len("utm_campaign=mail")) = "utm_campaign=mail") Then
+                If Len(filtered) = 0 Then
+                    filtered = param
+                Else
+                    filtered = filtered & "&" & param
+                End If
+            End If
+        End If
+    Next param
+
+    If Len(filtered) > 0 Then
+        StripTrackingParameters = Left$(workUrl, qPos - 1) & "?" & filtered & fragment
+    Else
+        StripTrackingParameters = Left$(workUrl, qPos - 1) & fragment
+    End If
+End Function
+
 Private Function BuildTrackedUrl(ByVal baseUrl As String, ByVal dateParam As String, ByVal alphaCode As String, Optional ByVal encodeAmpersands As Boolean = False) As String
+    ' 追跡用UTMパラメータを付与したURLを生成（必要に応じて&を&amp;に変換）
     Dim separator As String
     Dim query As String
     Dim finalUrl As String
+    Dim workUrl As String
+    Dim lowerWorkUrl As String
+    Dim targetCampaign As String
+    Dim hasSource As Boolean
+    Dim hasMedium As Boolean
+    Dim hasCampaign As Boolean
 
     If Len(baseUrl) = 0 Then
+        ' URLが空の場合はそのまま返す
         BuildTrackedUrl = baseUrl
         Exit Function
     End If
 
-    query = "utm_source=mail&utm_medium=email&utm_campaign=mail" & dateParam & "edu_" & alphaCode
-
-    If InStr(baseUrl, "?") > 0 Then
-        If Right$(baseUrl, 1) = "?" Or Right$(baseUrl, 1) = "&" Then
-            separator = ""
-        Else
-            separator = "&"
-        End If
+    If encodeAmpersands Then
+        ' HTML出力時は事前に&を戻してから処理する
+        workUrl = Replace$(baseUrl, "&amp;", "&")
     Else
-        separator = "?"
+        workUrl = baseUrl
     End If
 
-    finalUrl = baseUrl & separator & query
+    query = "utm_source=mail&utm_medium=email&utm_campaign=mail" & dateParam & "edu_" & alphaCode
+    ' 付与する追跡パラメータを生成
+    lowerWorkUrl = LCase$(workUrl)
+    targetCampaign = LCase$("utm_campaign=mail" & dateParam & "edu_" & alphaCode)
+    hasSource = (InStr(lowerWorkUrl, "utm_source=mail") > 0)
+    hasMedium = (InStr(lowerWorkUrl, "utm_medium=email") > 0)
+    hasCampaign = (InStr(lowerWorkUrl, targetCampaign) > 0)
+    ' 既存URLに同じUTMパラメータが含まれているかを判定
+
+    If hasSource And hasMedium And hasCampaign Then
+        ' 既に同じパラメータが揃っている場合は再付与しない
+        If encodeAmpersands Then
+            finalUrl = workUrl
+        Else
+            finalUrl = baseUrl
+        End If
+    Else
+        If hasSource Or hasMedium Or hasCampaign Then
+            ' 追跡情報が部分的に含まれている場合はいったん削除
+            workUrl = StripTrackingParameters(workUrl)
+        End If
+
+        If InStr(workUrl, "?") > 0 Then
+            ' 既存のクエリ有無に応じて接続文字を切り替える
+            If Right$(workUrl, 1) = "?" Or Right$(workUrl, 1) = "&" Then
+                separator = ""
+            Else
+                separator = "&"
+            End If
+        Else
+            separator = "?"
+        End If
+
+        finalUrl = workUrl & separator & query
+    End If
 
     If encodeAmpersands Then
+        ' HTML用にアンパサンドをエンコード
         finalUrl = Replace$(finalUrl, "&", "&amp;")
     End If
 
@@ -1256,6 +1418,7 @@ Private Function BuildTrackedUrl(ByVal baseUrl As String, ByVal dateParam As Str
 End Function
 
 Private Function NextAlpha(ByVal alpha As String) As String
+    ' メール追跡用パラメータの英字連番を算出（zの次はaa）
     Dim i As Long
     Dim carry As Boolean
     Dim chars() As String
