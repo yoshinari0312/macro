@@ -325,7 +325,7 @@ Public Sub ExportScheduleToHTML()
                         urlAlphaMap.Add linkArr(idx), currentAlpha
                         currentAlpha = NextAlpha(currentAlpha)
                     End If
-                    fullUrl = linkArr(idx) & "?utm_source=mail&utm_medium=email&utm_campaign=mail" & dateParam & "edu_" & urlAlphaMap(linkArr(idx))
+                    fullUrl = BuildTrackedUrl(linkArr(idx), dateParam, urlAlphaMap(linkArr(idx)), True)
                     html = html & "<td width=""10%"" rowspan=""" & placeSpan(idx) & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;""><a href=""" & fullUrl & """ style=""color:#008eef;text-decoration:underline;"" target=""_blank"">" & escapedPlace & "</a></td>" & vbCrLf
                 Else
                     html = html & "<td width=""10%"" rowspan=""" & placeSpan(idx) & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;"">" & escapedPlace & "</td>" & vbCrLf
@@ -984,7 +984,7 @@ Public Sub GenerateCategorySchedule()
                                         currentAlpha = NextAlpha(currentAlpha)
                                     End If
                                     wsOutput.Hyperlinks.Add Anchor:=wsOutput.Cells(outputRow, "B"), _
-                                        Address:=baseUrl & "?utm_source=mail&utm_medium=email&utm_campaign=mail" & dateParam & "edu_" & urlAlphaMap(baseUrl), _
+                                        Address:=BuildTrackedUrl(baseUrl, dateParam, urlAlphaMap(baseUrl)), _
                                         TextToDisplay:=locationName
                                 End If
                             End If
@@ -1085,7 +1085,7 @@ Public Sub GenerateCategorySchedule()
                             currentAlpha = NextAlpha(currentAlpha)
                         End If
                         wsOutput.Hyperlinks.Add Anchor:=wsOutput.Cells(outputRow, "B"), _
-                            Address:=baseUrl2 & "?utm_source=mail&utm_medium=email&utm_campaign=mail" & dateParam & "edu_" & urlAlphaMap(baseUrl2), _
+                            Address:=BuildTrackedUrl(baseUrl2, dateParam, urlAlphaMap(baseUrl2)), _
                             TextToDisplay:=locationName
                     End If
                 End If
@@ -1223,6 +1223,37 @@ ErrHandler:
     Resume CleanExit
 
 End Sub
+
+Private Function BuildTrackedUrl(ByVal baseUrl As String, ByVal dateParam As String, ByVal alphaCode As String, Optional ByVal encodeAmpersands As Boolean = False) As String
+    Dim separator As String
+    Dim query As String
+    Dim finalUrl As String
+
+    If Len(baseUrl) = 0 Then
+        BuildTrackedUrl = baseUrl
+        Exit Function
+    End If
+
+    query = "utm_source=mail&utm_medium=email&utm_campaign=mail" & dateParam & "edu_" & alphaCode
+
+    If InStr(baseUrl, "?") > 0 Then
+        If Right$(baseUrl, 1) = "?" Or Right$(baseUrl, 1) = "&" Then
+            separator = ""
+        Else
+            separator = "&"
+        End If
+    Else
+        separator = "?"
+    End If
+
+    finalUrl = baseUrl & separator & query
+
+    If encodeAmpersands Then
+        finalUrl = Replace$(finalUrl, "&", "&amp;")
+    End If
+
+    BuildTrackedUrl = finalUrl
+End Function
 
 Private Function NextAlpha(ByVal alpha As String) As String
     Dim i As Long
