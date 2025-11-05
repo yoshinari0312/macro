@@ -159,10 +159,11 @@ Public Sub ExportScheduleToHTML()
         If Trim$(CStr(ws.Cells(r, "A").value)) <> "" Then
             If Left$(Trim$(CStr(ws.Cells(r, "A").value)), 1) = "〇" Then
                 firstCatName = Trim$(CStr(ws.Cells(r, "A").value))
-                html = html & "<tr>" & vbCrLf & _
-                            "<td style=""height:12px!important;font-size:12px!important;line-height:0.5!important;padding:6px 8px!important;margin-bottom:6px;"" width=""100%"" class=""responsive-td"" valign=""top"" align=""left"">" & vbCrLf & _
-                            "<font size=""4"" color=""#000000"" style=""font-size:14px;color:#000000;line-height:1;"">" & Replace$(firstCatName, "&", "&amp;") & "</font>" & vbCrLf & _
-                            "</td></tr>" & vbCrLf & vbCrLf
+                html = html & "    <tr>" & vbCrLf & _
+                            "        <td style=""height:12px!important;font-size:12px!important;line-height:0.5!important;padding:6px 8px!important;margin-bottom:6px;"" width=""100%"" class=""responsive-td"" valign=""top"" align=""left"">" & vbCrLf & _
+                            "            <font size=""4"" color=""#000000"" style=""font-size:14px;color:#000000;line-height:1;"">" & Replace$(firstCatName, "&", "&amp;") & "</font>" & vbCrLf & _
+                            "        </td>" & vbCrLf & _
+                            "    </tr>" & vbCrLf & vbCrLf
                 firstCatFound = True
             End If
             Exit For
@@ -184,9 +185,9 @@ Public Sub ExportScheduleToHTML()
         If Len(cellA) > 0 And Left$(cellA, 1) = "〇" And cellB = "" And cellC = "" And cellD = "" Then
             ' 新しいカテゴリ見出しが出現した場合の処理
             If openTable Then
-                html = html & "        </tbody>" & vbCrLf & _
-                              "    </table>" & vbCrLf & _
-                              "</td>" & vbCrLf & vbCrLf
+                html = html & "            </tbody>" & vbCrLf & _
+                              "        </table>" & vbCrLf & _
+                              "    </td>" & vbCrLf & vbCrLf
                 openTable = False
             End If
 
@@ -208,28 +209,29 @@ Public Sub ExportScheduleToHTML()
             Loop
 
             ' カテゴリ間の余白を確保（trの前に余白用trを挿入）
-            html = html & "<tr>" & vbCrLf & _
-                          "<td style=""height:12px!important;font-size:12px!important;line-height:0.5!important;padding:6px 8px!important;"" width=""100%"" class=""responsive-td"" valign=""top"" align=""left"">" & vbCrLf & _
-                          "<font size=""4"" color=""#000000"" style=""font-size:14px;color:#000000;line-height:1;"">" & Replace$(cellA, "&", "&amp;") & "</font>" & vbCrLf & _
-                          "</td></tr>" & vbCrLf & vbCrLf
+            html = html & "    <tr>" & vbCrLf & _
+                          "        <td style=""height:12px!important;font-size:12px!important;line-height:0.5!important;padding:6px 8px!important;"" width=""100%"" class=""responsive-td"" valign=""top"" align=""left"">" & vbCrLf & _
+                          "            <font size=""4"" color=""#000000"" style=""font-size:14px;color:#000000;line-height:1;"">" & Replace$(cellA, "&", "&amp;") & "</font>" & vbCrLf & _
+                          "        </td>" & vbCrLf & _
+                          "    </tr>" & vbCrLf & vbCrLf
 
             If hasDataForCategory Then
                 ' カテゴリに紐づくデータが続く場合のみテーブル要素を作成
                 ' テーブルの前に少し余白を挿入してカテゴリとテーブルの間隔を確保
-                html = html & "<td width=""100%"" class=""responsive-td"" valign=""top"" style=""padding: 10px;"">" & vbCrLf
-                html = html & "<table border=""1"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse: collapse; font-size: 14px; line-height: 1.2; width: 100%; vertical-align: middle;"">" & vbCrLf
-                html = html & "<colgroup><col width=""50%;""><col width=""10%;""><col width=""30%;""><col width=""10%;""></colgroup>" & vbCrLf
-                html = html & "<tbody>" & vbCrLf
+                html = html & "        <td width=""100%"" class=""responsive-td"" valign=""top"" style=""padding: 10px;"">" & vbCrLf
+                html = html & "            <table border=""1"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse: collapse; font-size: 14px; line-height: 1.2; width: 100%; vertical-align: middle;"">" & vbCrLf
+                html = html & "                <colgroup><col width=""50%;""><col width=""10%;""><col width=""30%;""><col width=""10%;""></colgroup>" & vbCrLf
+                html = html & "                <tbody>" & vbCrLf
                 If isFirstTable Then
-                    html = html & "<tr style=""background-color: #555555; color: #ffffff; line-height: 1.4;"">" & vbCrLf
-                    html = html & "<th width=""50%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">コース名</th>" & vbCrLf
-                    html = html & "<th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">場所</th>" & vbCrLf
-                    html = html & "<th width=""30%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">日程</th>" & vbCrLf
-                    html = html & "<th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">残席数</th>" & vbCrLf
-                    html = html & "</tr>" & vbCrLf
+                    html = html & "                    <tr style=""background-color: #555555; color: #ffffff; line-height: 1.4;"">" & vbCrLf
+                    html = html & "                        <th width=""50%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">コース名</th>" & vbCrLf
+                    html = html & "                        <th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">場所</th>" & vbCrLf
+                    html = html & "                        <th width=""30%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">日程</th>" & vbCrLf
+                    html = html & "                        <th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">残席数</th>" & vbCrLf
+                    html = html & "                    </tr>" & vbCrLf
                 End If
-                html = html & "</tbody>" & vbCrLf
-                html = html & "<tbody>" & vbCrLf
+                html = html & "                </tbody>" & vbCrLf
+                html = html & "                <tbody>" & vbCrLf
                 openTable = True
                 isFirstTable = False
             End If
@@ -249,20 +251,20 @@ Public Sub ExportScheduleToHTML()
 
         If Not openTable Then
             ' テーブルが開かれていない場合は新規にテーブルを生成
-            html = html & "<td width=""100%"" class=""responsive-td"" valign=""top"" style=""padding: 10px;"">" & vbCrLf
-            html = html & "<table border=""1"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse: collapse; font-size: 14px; line-height: 1.2; width: 100%; vertical-align: middle;"">" & vbCrLf
-            html = html & "<colgroup><col width=""50%;""><col width=""10%;""><col width=""30%;""><col width=""10%;""></colgroup>" & vbCrLf
-            html = html & "<tbody>" & vbCrLf
+            html = html & "        <td width=""100%"" class=""responsive-td"" valign=""top"" style=""padding: 10px;"">" & vbCrLf
+            html = html & "            <table border=""1"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse: collapse; font-size: 14px; line-height: 1.2; width: 100%; vertical-align: middle;"">" & vbCrLf
+            html = html & "                <colgroup><col width=""50%;""><col width=""10%;""><col width=""30%;""><col width=""10%;""></colgroup>" & vbCrLf
+            html = html & "                <tbody>" & vbCrLf
             If isFirstTable Then
-                html = html & "<tr style=""background-color: #555555; color: #ffffff; line-height: 1.4;"">" & vbCrLf
-                html = html & "<th width=""50%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">コース名</th>" & vbCrLf
-                html = html & "<th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">場所</th>" & vbCrLf
-                html = html & "<th width=""30%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">日程</th>" & vbCrLf
-                html = html & "<th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">残席数</th>" & vbCrLf
-                html = html & "</tr>" & vbCrLf
+                html = html & "                    <tr style=""background-color: #555555; color: #ffffff; line-height: 1.4;"">" & vbCrLf
+                html = html & "                        <th width=""50%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">コース名</th>" & vbCrLf
+                html = html & "                        <th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">場所</th>" & vbCrLf
+                html = html & "                        <th width=""30%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">日程</th>" & vbCrLf
+                html = html & "                        <th width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;text-align: center!important;border: 1px solid #000!important;"">残席数</th>" & vbCrLf
+                html = html & "                    </tr>" & vbCrLf
             End If
-            html = html & "</tbody>" & vbCrLf
-            html = html & "<tbody>" & vbCrLf
+            html = html & "                </tbody>" & vbCrLf
+            html = html & "                <tbody>" & vbCrLf
             openTable = True
             isFirstTable = False
         End If
@@ -335,10 +337,10 @@ Public Sub ExportScheduleToHTML()
         For idx = 1 To rowCount
             ' HTMLの1行分を出力（コース名・場所・日程・残席）
             If idx = 1 Then
-                html = html & "<tr style=""background-color: #ffffff;"">" & vbCrLf
-                html = html & "<td width=""50%"" rowspan=""" & rowCount & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;"">" & escapedCourseName & "</td>" & vbCrLf
+                html = html & "                    <tr style=""background-color: #ffffff;"">" & vbCrLf
+                html = html & "                        <td width=""50%"" rowspan=""" & rowCount & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;"">" & escapedCourseName & "</td>" & vbCrLf
             Else
-                html = html & "<tr>" & vbCrLf
+                html = html & "                    <tr>" & vbCrLf
             End If
 
             If placeSpan(idx) > 0 Then
@@ -351,17 +353,17 @@ Public Sub ExportScheduleToHTML()
                         currentAlpha = NextAlpha(currentAlpha)
                     End If
                     fullUrl = BuildTrackedUrl(linkArr(idx), dateParam, urlAlphaMap(linkArr(idx)), True)
-                    html = html & "<td width=""10%"" rowspan=""" & placeSpan(idx) & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;""><a href=""" & fullUrl & """ style=""color:#008eef;text-decoration:underline;"" target=""_blank"">" & escapedPlace & "</a></td>" & vbCrLf
+                    html = html & "                        <td width=""10%"" rowspan=""" & placeSpan(idx) & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;""><a href=""" & fullUrl & """ style=""color:#008eef;text-decoration:underline;"" target=""_blank"">" & escapedPlace & "</a></td>" & vbCrLf
                 Else
-                    html = html & "<td width=""10%"" rowspan=""" & placeSpan(idx) & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;"">" & escapedPlace & "</td>" & vbCrLf
+                    html = html & "                        <td width=""10%"" rowspan=""" & placeSpan(idx) & """ style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;vertical-align: middle; text-align: center;"">" & escapedPlace & "</td>" & vbCrLf
                 End If
             End If
 
             escapedDate = Replace$(dateArr(idx), "&", "&amp;")
             escapedSeat = Replace$(seatArr(idx), "&", "&amp;")
-            html = html & "<td width=""30%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;text-align: center;"">" & escapedDate & "</td>" & vbCrLf
-            html = html & "<td width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;text-align: center;"">" & escapedSeat & "</td>" & vbCrLf
-            html = html & "</tr>" & vbCrLf
+            html = html & "                        <td width=""30%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;text-align: center;"">" & escapedDate & "</td>" & vbCrLf
+            html = html & "                        <td width=""10%"" style=""height:12px!important;font-size:12px!important;line-height:1!important;padding:6px 8px!important;border:1px solid #000!important;text-align: center;"">" & escapedSeat & "</td>" & vbCrLf
+            html = html & "                    </tr>" & vbCrLf
         Next idx
 
         advance = rowCount
@@ -374,9 +376,9 @@ AdvanceLoop:
 
     If openTable Then
         ' ループ終了時に開きっぱなしのテーブルがあれば閉じる
-        html = html & "        </tbody>" & vbCrLf & _
-                      "    </table>" & vbCrLf & _
-                      "</td>" & vbCrLf & vbCrLf
+        html = html & "                </tbody>" & vbCrLf & _
+                      "            </table>" & vbCrLf & _
+                      "        </td>" & vbCrLf & vbCrLf
         openTable = False
     End If
 
